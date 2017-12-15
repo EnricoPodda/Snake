@@ -6,6 +6,7 @@ from PIL import Image
 #import time
 from enum import Enum
 
+
 class Direction(Enum):
     RIGHT = 0
     LEFT = 1
@@ -13,16 +14,16 @@ class Direction(Enum):
     DOWN = 3
 
 
-class Player:    
+class Head:    
     
     def __init__(self, App_Self, Apple_Self):
         self._App = App_Self
         self._Apple = Apple_Self
-        self.x =  ((self._App.windowWidth / self._App.snake.size[0]) / 2 )* self._App.snake.size[0] 
-        self.y =  ((self._App.windowHeight / self._App.snake.size[1]) / 2 )* self._App.snake.size[1]
+        self.x =  ((self._App.windowWidth / self._App.head.size[0]) / 2 )* self._App.head.size[0] 
+        self.y =  ((self._App.windowHeight / self._App.head.size[1]) / 2 )* self._App.head.size[1]
         self.direction = Direction.RIGHT
         self.axisSize = self._App.windowWidth
-        self.speed = self._App.snake.size[0]
+        self.speed = self._App.head.size[0]
 
     def posSpeed(self):
         if self.speed < 0 : self.speed = self.speed * (-1)
@@ -44,39 +45,50 @@ class Player:
 
 class Tail:
 
-    def __init__(self, App_Self, Player_Self):
+    def __init__(self, App_Self, Head_Self):
         self._App = App_Self
-        self._Player = Player_Self
+        self._Head = Head_Self
         
-        self.x = self._Player.x
-        self.y = self._Player.y
+        self.x = self._Head.x
+        self.y = self._Head.y
 
 
 class Apple:
 
     def __init__(self, App_Self):
         self._App = App_Self
-        self.rand_x = random.randrange(self._App.windowWidth)
-        self.x = self.rand_x - (self.rand_x % 50) #same rand
+        self.rand_x = random.randrange(self._App.windowWidth) 
         self.rand_y = random.randrange(self._App.windowHeight)
+
+        self.x = self.rand_x - (self.rand_x % 50)
         self.y = self.rand_y - (self.rand_y % 50)
 
+    def new_coordinates(self):
+        self.rand_x = random.randrange(self._App.windowWidth)
+        self.rand_y = random.randrange(self._App.windowHeight)
+
+        #TODO: if Place.isOccupied: ...
+
+        self.x = self.rand_x - (self.rand_x % 50)
+        self.y = self.rand_y - (self.rand_y % 50)
 
 
 class App:    
 
     def __init__(self):
-        self.snake = Image.open("green_square.png")
-        self.windowWidth = (self.snake.size[0]*15)
-        self.windowHeight = (self.snake.size[1]*11)
+        self.head = Image.open("green_square.png")
+        self.windowWidth = (self.head.size[0]*15)
+        self.windowHeight = (self.head.size[1]*11)
         self._running = True
         self.frame_rate = 5
         self._display_surf = None
         self._image_apple = None
-        self._image_snake = None
+        self._image_head = None
         self.apple = Apple(self)        
-        self.player = Player(self, self.apple)
-        self.tail = [Tail(self, self.player)] * 3
+        self.head = Head(self, self.apple)
+        self.tail = []
+        for i in range(0, 3):
+            self.tail.append(Tail(self, self.head))
         
     def on_init(self):
         pygame.init()
@@ -84,7 +96,7 @@ class App:
  
         pygame.display.set_caption('Snake')
         self._running = True
-        self._image_snake = pygame.image.load("green_square.png").convert()
+        self._image_head = pygame.image.load("green_square.png").convert()
         self._image_tail = pygame.image.load("green_square.png").convert()
         self._image_apple = pygame.image.load("red_circle.png").convert()
  
@@ -97,7 +109,7 @@ class App:
  
     def on_render(self):
         self._display_surf.fill((0,0,0))
-        self._display_surf.blit(self._image_snake,(self.player.x,self.player.y))
+        self._display_surf.blit(self._image_head,(self.head.x,self.head.y))
         #TODO: Fix. It'seeing only one pieces
         for t in self.tail:
             self._display_surf.blit(self._image_tail,(t.x,t.y))
@@ -118,47 +130,42 @@ class App:
             pygame.event.pump()
             keys = pygame.key.get_pressed() 
  
-            if (keys[K_RIGHT] and self.player.direction != Direction.LEFT):
-                self.player.direction = Direction.RIGHT
-                self.player.axisSize = self.windowWidth
-                self.player.posSpeed()
-
-            if (keys[K_LEFT] and self.player.direction != Direction.RIGHT):
-                self.player.direction = Direction.LEFT
-                self.player.axisSize = self.windowWidth
-                self.player.negSpeed()
-
-            if (keys[K_UP] and self.player.direction != Direction.DOWN):
-                self.player.direction = Direction.UP
-                self.player.axisSize = self.windowHeight
-                self.player.negSpeed()
- 
-            if (keys[K_DOWN] and self.player.direction != Direction.UP):
-                self.player.direction = Direction.DOWN
-                self.player.axisSize = self.windowHeight
-                self.player.posSpeed()
- 
-            if (keys[K_ESCAPE]):
+            if (keys[K_RIGHT] and self.head.direction != Direction.LEFT):
+                self.head.direction = Direction.RIGHT
+                self.head.axisSize = self.windowWidth
+                self.head.posSpeed()
+            elif (keys[K_LEFT] and self.head.direction != Direction.RIGHT):
+                self.head.direction = Direction.LEFT
+                self.head.axisSize = self.windowWidth
+                self.head.negSpeed()
+            elif (keys[K_UP] and self.head.direction != Direction.DOWN):
+                self.head.direction = Direction.UP
+                self.head.axisSize = self.windowHeight
+                self.head.negSpeed()
+            elif (keys[K_DOWN] and self.head.direction != Direction.UP):
+                self.head.direction = Direction.DOWN
+                self.head.axisSize = self.windowHeight
+                self.head.posSpeed()
+            elif (keys[K_ESCAPE]):
                 self._running = False
 
-            #TODO: reverse foreach
+            #Reverse foreach. Update tail position from the bottom to the top
+            for i in (reversed(range(len(self.tail)))):
+                if i == 0:
+                    self.tail[i].x = self.head.x
+                    self.tail[i].y = self.head.y
+                else:
+                    self.tail[i].x = self.tail[i-1].x
+                    self.tail[i].y = self.tail[i-1].y            
 
-            self.tail[1].x = self.tail[2].x
-            self.tail[1].y = self.tail[2].y            
+            self.head.move()
 
-            self.tail[0].x = self.tail[1].x
-            self.tail[0].y = self.tail[1].y
-
-            self.tail[1].x = self.player.x
-            self.tail[1].y = self.player.y
-
-            self.player.move()
-
-            if self.player.isEating():
+            if self.head.isEating():
+                self.apple.new_coordinates()
+                self.tail.append(Tail(self, self.head))
+                self.tail[len(self.tail) - 1].x = 0
+                self.tail[len(self.tail) - 1].y = 0
                 self.frame_rate += 1
-                
-
-
 
             #pygame.time.wait(250)                                      #Milliseconds
             pygame.time.Clock().tick(self.frame_rate)                   #Frame for second
