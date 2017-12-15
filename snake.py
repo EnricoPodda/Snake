@@ -12,6 +12,7 @@ class Direction(Enum):
     UP = 2
     DOWN = 3
 
+
 class Player:    
     
     def __init__(self, App_Self, Apple_Self):
@@ -37,8 +38,19 @@ class Player:
         if self.direction == Direction.UP or self.direction == Direction.DOWN:
             self.y = (self.y + self.speed) % self.axisSize
     
-    def eat(self):
+    def isEating(self):
         return self.x == self._Apple.x and self.y == self._Apple.y 
+
+
+class Tail:
+
+    def __init__(self, App_Self, Player_Self):
+        self._App = App_Self
+        self._Player = Player_Self
+        
+        self.x = self._Player.x
+        self.y = self._Player.y
+
 
 class Apple:
 
@@ -50,7 +62,7 @@ class Apple:
         self.y = self.rand_y - (self.rand_y % 50)
 
 
- 
+
 class App:    
 
     def __init__(self):
@@ -63,8 +75,8 @@ class App:
         self._image_apple = None
         self._image_snake = None
         self.apple = Apple(self)        
-        self.player = []
-        self.player.append(Player(self, self.apple)) 
+        self.player = Player(self, self.apple)
+        self.tail = [Tail(self, self.player)] * 3
         
     def on_init(self):
         pygame.init()
@@ -73,6 +85,7 @@ class App:
         pygame.display.set_caption('Snake')
         self._running = True
         self._image_snake = pygame.image.load("green_square.png").convert()
+        self._image_tail = pygame.image.load("green_square.png").convert()
         self._image_apple = pygame.image.load("red_circle.png").convert()
  
     def on_event(self, event):
@@ -84,7 +97,10 @@ class App:
  
     def on_render(self):
         self._display_surf.fill((0,0,0))
-        self._display_surf.blit(self._image_snake,(self.player[0].x,self.player[0].y))
+        self._display_surf.blit(self._image_snake,(self.player.x,self.player.y))
+        #TODO: Fix. It'seeing only one pieces
+        for t in self.tail:
+            self._display_surf.blit(self._image_tail,(t.x,t.y))
         self._display_surf.blit(self._image_apple,(self.apple.x,self.apple.y))
         pygame.display.flip()
  
@@ -95,40 +111,57 @@ class App:
         if self.on_init() == False:
             self._running = False
  
+        self.on_loop()
+        self.on_render()
+
         while( self._running ):
             pygame.event.pump()
             keys = pygame.key.get_pressed() 
  
-            if (keys[K_RIGHT] and self.player[0].direction != Direction.LEFT):
-                self.player[0].direction = Direction.RIGHT
-                self.player[0].axisSize = self.windowWidth
-                self.player[0].posSpeed()
+            if (keys[K_RIGHT] and self.player.direction != Direction.LEFT):
+                self.player.direction = Direction.RIGHT
+                self.player.axisSize = self.windowWidth
+                self.player.posSpeed()
 
-            if (keys[K_LEFT] and self.player[0].direction != Direction.RIGHT):
-                self.player[0].direction = Direction.LEFT
-                self.player[0].axisSize = self.windowWidth
-                self.player[0].negSpeed()
+            if (keys[K_LEFT] and self.player.direction != Direction.RIGHT):
+                self.player.direction = Direction.LEFT
+                self.player.axisSize = self.windowWidth
+                self.player.negSpeed()
 
-            if (keys[K_UP] and self.player[0].direction != Direction.DOWN):
-                self.player[0].direction = Direction.UP
-                self.player[0].axisSize = self.windowHeight
-                self.player[0].negSpeed()
+            if (keys[K_UP] and self.player.direction != Direction.DOWN):
+                self.player.direction = Direction.UP
+                self.player.axisSize = self.windowHeight
+                self.player.negSpeed()
  
-            if (keys[K_DOWN] and self.player[0].direction != Direction.UP):
-                self.player[0].direction = Direction.DOWN
-                self.player[0].axisSize = self.windowHeight
-                self.player[0].posSpeed()
+            if (keys[K_DOWN] and self.player.direction != Direction.UP):
+                self.player.direction = Direction.DOWN
+                self.player.axisSize = self.windowHeight
+                self.player.posSpeed()
  
             if (keys[K_ESCAPE]):
                 self._running = False
 
-            self.player[0].move()
+            #TODO: reverse foreach
 
-            if self.player[0].eat():
+            self.tail[1].x = self.tail[2].x
+            self.tail[1].y = self.tail[2].y            
+
+            self.tail[0].x = self.tail[1].x
+            self.tail[0].y = self.tail[1].y
+
+            self.tail[1].x = self.player.x
+            self.tail[1].y = self.player.y
+
+            self.player.move()
+
+            if self.player.isEating():
                 self.frame_rate += 1
+                
 
-            #pygame.time.wait(250)                      #Milliseconds
-            pygame.time.Clock().tick(self.frame_rate)                 #Frame for second
+
+
+            #pygame.time.wait(250)                                      #Milliseconds
+            pygame.time.Clock().tick(self.frame_rate)                   #Frame for second
 
             self.on_loop()
             self.on_render()
