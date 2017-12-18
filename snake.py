@@ -16,22 +16,22 @@ class Direction(Enum):
 
 class Head:    
     
-    def __init__(self, App_Self, Apple_Self):
-        self._App = App_Self
-        self._Apple = Apple_Self
+    def __init__(self, app_self, apple_self):
+        self._App = app_self
+        self._Apple = apple_self
 
-        self.x =  ((self._App.windowWidth / self._App.imagesWidth) / 2 )* self._App.imagesWidth 
-        self.y =  ((self._App.windowHeight / self._App.imagesHeight) / 2 )* self._App.imagesHeight
+        self.x =  ((self._App.windowWidth / self._App.imagesWidth) / 2 ) * self._App.imagesWidth 
+        self.y =  ((self._App.windowHeight / self._App.imagesHeight) / 2 ) * self._App.imagesHeight
         
         self.direction = Direction.RIGHT
         self.axisSize = self._App.windowWidth
         
         self.speed = self._App.imagesWidth
 
-    def posSpeed(self):
+    def pos_speed(self):
         if self.speed < 0 : self.speed = self.speed * (-1)
 
-    def negSpeed(self):
+    def neg_speed(self):
         if self.speed > 0 : self.speed = self.speed * (-1)  
 
     def move(self):
@@ -42,24 +42,21 @@ class Head:
         if self.direction == Direction.UP or self.direction == Direction.DOWN:
             self.y = (self.y + self.speed) % self.axisSize
     
-    def isEating(self):
+    def is_eating(self):
         return self.x == self._Apple.x and self.y == self._Apple.y 
 
 
 class Tail:
 
-    def __init__(self, App_Self, Head_Self):
-        self._App = App_Self
-        self._Head = Head_Self
-        
-        self.x = self._Head.x
-        self.y = self._Head.y
+    def __init__(self, x, y):
+        self.x = x
+        self.y = y
 
 
 class Apple:
 
-    def __init__(self, App_Self):
-        self._App = App_Self
+    def __init__(self, app_self):
+        self._App = app_self
 
         self.rand_x = random.randrange(self._App.windowWidth) 
         self.rand_y = random.randrange(self._App.windowHeight)
@@ -67,7 +64,7 @@ class Apple:
         self.x = self.rand_x - (self.rand_x % 50)
         self.y = self.rand_y - (self.rand_y % 50)
 
-    def new_coordinates(self):
+    def respawn(self):
         
         flag = True
         
@@ -85,23 +82,22 @@ class Apple:
 class App:    
 
     def __init__(self):
-        self.imagesWidth = Image.open("green_square.png").size[0]
-        self.imagesHeight = Image.open("green_square.png").size[1]
-        self.windowWidth = (self.imagesWidth * 15)
-        self.windowHeight = (self.imagesHeight * 2)
+        self.imagesWidth = Image.open("body.png").size[0]
+        self.imagesHeight = Image.open("body.png").size[1]
+        self.windowWidth = (self.imagesWidth * 33)
+        self.windowHeight = (self.imagesHeight * 19)
         
         self._running = True
         self._display_surf = None
         self._image_apple = None
         self._image_head = None
 
-
-        self.frame_rate = 25
+        self.frame_rate = 2
         self.apple = Apple(self)        
         self.head = Head(self, self.apple)
         self.tail = []
         for i in range(0, 3):
-            self.tail.append(Tail(self, self.head))
+            self.tail.append(Tail(self.head.x, self.head.y))
         
     def is_occupied(self, x, y):
         for t in self.tail:
@@ -117,9 +113,10 @@ class App:
  
         pygame.display.set_caption('Snake')
         self._running = True
-        self._image_head = pygame.image.load("green_square.png").convert()
-        self._image_tail = pygame.image.load("green_square.png").convert()
-        self._image_apple = pygame.image.load("red_circle.png").convert()
+        self._image_head = pygame.image.load("head_up.png").convert_alpha()
+        self._image_tail = pygame.image.load("body.png").convert()
+        self._image_apple = pygame.image.load("apple.png").convert_alpha()
+        self._image_grass = pygame.image.load("grass.png").convert()
  
     def on_event(self, event):
         if event.type == QUIT:
@@ -129,10 +126,14 @@ class App:
         pass
  
     def on_render(self):
-        self._display_surf.fill((0,0,0))
-        self._display_surf.blit(self._image_head,(self.head.x,self.head.y))
+        for i in range(0, self.windowWidth / self.imagesWidth):
+            for j in range(0, self.windowHeight / self.imagesHeight):
+                self._display_surf.blit(self._image_grass,(i * self.imagesWidth, j * self.imagesHeight))        
+        
         for t in self.tail:
             self._display_surf.blit(self._image_tail,(t.x,t.y))
+        #TODO: implement pygame.transform.rotate()
+        self._display_surf.blit(self._image_head,(self.head.x,self.head.y))
         self._display_surf.blit(self._image_apple,(self.apple.x,self.apple.y))
         pygame.display.flip()
  
@@ -140,6 +141,10 @@ class App:
         pygame.quit()
  
     def on_execute(self):
+
+        temp_x = 0
+        temp_y = 0
+
         if self.on_init() == False:
             self._running = False
  
@@ -153,22 +158,25 @@ class App:
             if (keys[K_RIGHT] and self.head.direction != Direction.LEFT):
                 self.head.direction = Direction.RIGHT
                 self.head.axisSize = self.windowWidth
-                self.head.posSpeed()
+                self.head.pos_speed()
             elif (keys[K_LEFT] and self.head.direction != Direction.RIGHT):
                 self.head.direction = Direction.LEFT
                 self.head.axisSize = self.windowWidth
-                self.head.negSpeed()
+                self.head.neg_speed()
             elif (keys[K_UP] and self.head.direction != Direction.DOWN):
                 self.head.direction = Direction.UP
                 self.head.axisSize = self.windowHeight
-                self.head.negSpeed()
+                self.head.neg_speed()
             elif (keys[K_DOWN] and self.head.direction != Direction.UP):
                 self.head.direction = Direction.DOWN
                 self.head.axisSize = self.windowHeight
-                self.head.posSpeed()
+                self.head.pos_speed()
             elif (keys[K_ESCAPE]):
                 self._running = False
 
+            temp_x = self.tail[len(self.tail) - 1].x 
+            temp_y = self.tail[len(self.tail) - 1].y
+ 
             #Reverse foreach. Update tail position from the bottom to the top
             for i in (reversed(range(len(self.tail)))):
                 if i == 0:
@@ -186,11 +194,11 @@ class App:
                     
                     self._running = False
             
-            if self.head.isEating():
-                self.apple.new_coordinates()
-                self.tail.append(Tail(self, self.head))
-                self.tail[len(self.tail) - 1].x = 0
-                self.tail[len(self.tail) - 1].y = 0
+            if self.head.is_eating():
+                self.apple.respawn()
+                self.tail.append(Tail(self.head.x, self.head.y))
+                self.tail[len(self.tail) - 1].x = temp_x
+                self.tail[len(self.tail) - 1].y = temp_y
                 #self.frame_rate += 1                                   #Not the best way to speed up
 
             #pygame.time.wait(250)                                      #Milliseconds
