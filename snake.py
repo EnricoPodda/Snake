@@ -20,13 +20,13 @@ class Head:
         self._App = app_self
         self._Apple = apple_self
 
-        self.x =  ((self._App.windowWidth / self._App.imagesWidth) / 2 ) * self._App.imagesWidth 
-        self.y =  ((self._App.windowHeight / self._App.imagesHeight) / 2 ) * self._App.imagesHeight
+        self.x =  ((self._App.window_width / self._App.images-width) / 2 ) * self._App.images-width 
+        self.y =  ((self._App.window-height / self._App.images-height) / 2 ) * self._App.images-height
         
         self.direction = Direction.RIGHT
-        self.axisSize = self._App.windowWidth
+        self.axisSize = self._App.window_width
         
-        self.speed = self._App.imagesWidth
+        self.speed = self._App.images-width
 
     def pos_speed(self):
         if self.speed < 0 : self.speed = self.speed * (-1)
@@ -58,8 +58,8 @@ class Apple:
     def __init__(self, app_self):
         self._App = app_self
 
-        self.rand_x = random.randrange(self._App.windowWidth) 
-        self.rand_y = random.randrange(self._App.windowHeight)
+        self.rand_x = random.randrange(self._App.window_width) 
+        self.rand_y = random.randrange(self._App.window-height)
 
         self.x = self.rand_x - (self.rand_x % 50)
         self.y = self.rand_y - (self.rand_y % 50)
@@ -70,8 +70,8 @@ class Apple:
         
         while flag:
 
-            self.rand_x = random.randrange(self._App.windowWidth)
-            self.rand_y = random.randrange(self._App.windowHeight)
+            self.rand_x = random.randrange(self._App.window_width)
+            self.rand_y = random.randrange(self._App.window-height)
 
             self.x = self.rand_x - (self.rand_x % 50)
             self.y = self.rand_y - (self.rand_y % 50)
@@ -82,10 +82,10 @@ class Apple:
 class App:    
 
     def __init__(self):
-        self.imagesWidth = Image.open("body.png").size[0]
-        self.imagesHeight = Image.open("body.png").size[1]
-        self.windowWidth = (self.imagesWidth * 33)
-        self.windowHeight = (self.imagesHeight * 19)
+        self.images-width = Image.open("body.png").size[0]
+        self.images-height = Image.open("body.png").size[1]
+        self.window_width = (self.images-width * 33)
+        self.window-height = (self.images-height * 19)
         
         self._running = True
         self._display_surf = None
@@ -109,7 +109,7 @@ class App:
 
     def on_init(self):
         pygame.init()
-        self._display_surf = pygame.display.set_mode((self.windowWidth,self.windowHeight), pygame.HWSURFACE)
+        self._display_surf = pygame.display.set_mode((self.window_width,self.window-height), pygame.HWSURFACE)
  
         pygame.display.set_caption('Snake')
         self._running = True
@@ -126,9 +126,9 @@ class App:
         pass
  
     def on_render(self):
-        for i in range(0, self.windowWidth / self.imagesWidth):
-            for j in range(0, self.windowHeight / self.imagesHeight):
-                self._display_surf.blit(self._image_grass,(i * self.imagesWidth, j * self.imagesHeight))        
+        for i in range(0, self.window_width / self.images-width):
+            for j in range(0, self.window-height / self.images-height):
+                self._display_surf.blit(self._image_grass,(i * self.images-width, j * self.images-height))        
         
         for t in self.tail:
             self._display_surf.blit(self._image_tail,(t.x,t.y))
@@ -157,19 +157,19 @@ class App:
  
             if (keys[K_RIGHT] and self.head.direction != Direction.LEFT):
                 self.head.direction = Direction.RIGHT
-                self.head.axisSize = self.windowWidth
+                self.head.axisSize = self.window_width
                 self.head.pos_speed()
             elif (keys[K_LEFT] and self.head.direction != Direction.RIGHT):
                 self.head.direction = Direction.LEFT
-                self.head.axisSize = self.windowWidth
+                self.head.axisSize = self.window_width
                 self.head.neg_speed()
             elif (keys[K_UP] and self.head.direction != Direction.DOWN):
                 self.head.direction = Direction.UP
-                self.head.axisSize = self.windowHeight
+                self.head.axisSize = self.window-height
                 self.head.neg_speed()
             elif (keys[K_DOWN] and self.head.direction != Direction.UP):
                 self.head.direction = Direction.DOWN
-                self.head.axisSize = self.windowHeight
+                self.head.axisSize = self.window-height
                 self.head.pos_speed()
             elif (keys[K_ESCAPE]):
                 self._running = False
@@ -204,7 +204,7 @@ class App:
             #pygame.time.wait(250)                                      #Milliseconds
             pygame.time.Clock().tick(self.frame_rate)                   #Frame for second
 
-            if len(self.tail) == ((self.windowHeight / self.imagesHeight * self.windowWidth / self.imagesWidth) - 1):
+            if len(self.tail) == ((self.window-height / self.images-height * self.window_width / self.images-width) - 1):
                 print("Size snake = "),
                 print len(self.tail) + 1
                 print("You WIN!!!")
