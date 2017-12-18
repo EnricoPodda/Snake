@@ -19,11 +19,14 @@ class Head:
     def __init__(self, App_Self, Apple_Self):
         self._App = App_Self
         self._Apple = Apple_Self
-        self.x =  ((self._App.windowWidth / self._App.head.size[0]) / 2 )* self._App.head.size[0] 
-        self.y =  ((self._App.windowHeight / self._App.head.size[1]) / 2 )* self._App.head.size[1]
+
+        self.x =  ((self._App.windowWidth / self._App.imagesWidth) / 2 )* self._App.imagesWidth 
+        self.y =  ((self._App.windowHeight / self._App.imagesHeight) / 2 )* self._App.imagesHeight
+        
         self.direction = Direction.RIGHT
         self.axisSize = self._App.windowWidth
-        self.speed = self._App.head.size[0]
+        
+        self.speed = self._App.imagesWidth
 
     def posSpeed(self):
         if self.speed < 0 : self.speed = self.speed * (-1)
@@ -57,6 +60,7 @@ class Apple:
 
     def __init__(self, App_Self):
         self._App = App_Self
+
         self.rand_x = random.randrange(self._App.windowWidth) 
         self.rand_y = random.randrange(self._App.windowHeight)
 
@@ -64,32 +68,49 @@ class Apple:
         self.y = self.rand_y - (self.rand_y % 50)
 
     def new_coordinates(self):
-        self.rand_x = random.randrange(self._App.windowWidth)
-        self.rand_y = random.randrange(self._App.windowHeight)
+        
+        flag = True
+        
+        while flag:
 
-        #TODO: if Place.isOccupied: ...
+            self.rand_x = random.randrange(self._App.windowWidth)
+            self.rand_y = random.randrange(self._App.windowHeight)
 
-        self.x = self.rand_x - (self.rand_x % 50)
-        self.y = self.rand_y - (self.rand_y % 50)
+            self.x = self.rand_x - (self.rand_x % 50)
+            self.y = self.rand_y - (self.rand_y % 50)
+
+            flag = self._App.is_occupied(self.x, self.y)
 
 
 class App:    
 
     def __init__(self):
-        self.head = Image.open("green_square.png")
-        self.windowWidth = (self.head.size[0]*15)
-        self.windowHeight = (self.head.size[1]*11)
+        self.imagesWidth = Image.open("green_square.png").size[0]
+        self.imagesHeight = Image.open("green_square.png").size[1]
+        self.windowWidth = (self.imagesWidth * 15)
+        self.windowHeight = (self.imagesHeight * 2)
+        
         self._running = True
-        self.frame_rate = 5
         self._display_surf = None
         self._image_apple = None
         self._image_head = None
+
+
+        self.frame_rate = 25
         self.apple = Apple(self)        
         self.head = Head(self, self.apple)
         self.tail = []
         for i in range(0, 3):
             self.tail.append(Tail(self, self.head))
         
+    def is_occupied(self, x, y):
+        for t in self.tail:
+            if t.x == x and t.y == y: return True
+
+        if self.head.x == x and self.head.y == y : return True
+        
+        return False
+
     def on_init(self):
         pygame.init()
         self._display_surf = pygame.display.set_mode((self.windowWidth,self.windowHeight), pygame.HWSURFACE)
@@ -110,7 +131,6 @@ class App:
     def on_render(self):
         self._display_surf.fill((0,0,0))
         self._display_surf.blit(self._image_head,(self.head.x,self.head.y))
-        #TODO: Fix. It'seeing only one pieces
         for t in self.tail:
             self._display_surf.blit(self._image_tail,(t.x,t.y))
         self._display_surf.blit(self._image_apple,(self.apple.x,self.apple.y))
@@ -160,15 +180,29 @@ class App:
 
             self.head.move()
 
+            for t in self.tail:
+                if self.head.x == t.x and self.head.y == t.y:
+                    print("You lose...")
+                    
+                    self._running = False
+            
             if self.head.isEating():
                 self.apple.new_coordinates()
                 self.tail.append(Tail(self, self.head))
                 self.tail[len(self.tail) - 1].x = 0
                 self.tail[len(self.tail) - 1].y = 0
-                self.frame_rate += 1
+                #self.frame_rate += 1                                   #Not the best way to speed up
 
             #pygame.time.wait(250)                                      #Milliseconds
             pygame.time.Clock().tick(self.frame_rate)                   #Frame for second
+
+            if len(self.tail) == ((self.windowHeight / self.imagesHeight * self.windowWidth / self.imagesWidth) - 1):
+                print("Size snake = "),
+                print len(self.tail) + 1
+                print("You WIN!!!")
+
+                self._running = False
+
 
             self.on_loop()
             self.on_render()
